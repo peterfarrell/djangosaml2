@@ -174,21 +174,23 @@ class LoginView(SPConfigMixin, View):
     def add_idp_hinting(self, http_response):
         return add_idp_hinting(self.request, http_response) or http_response
 
-    def get(self, request, *args, **kwargs):
-        logger.debug("Login process started")
-        next_path = self.get_next_path(request)
-
-        # if the user is already authenticated that maybe because of two reasons:
+    def should_prevent_auth(self, request) -> bool:
+        # If the user is already authenticated that maybe because of two reasons:
         # A) He has this URL in two browser windows and in the other one he
         #    has already initiated the authenticated session.
         # B) He comes from a view that (incorrectly) send him here because
         #    he does not have enough permissions. That view should have shown
         #    an authorization error in the first place.
-        # We can only make one thing here and that is configurable with the
-        # SAML_IGNORE_AUTHENTICATED_USERS_ON_LOGIN setting. If that setting
-        # is True (default value) we will redirect him to the next_path path.
-        # Otherwise, we will show an (configurable) authorization error.
-        if request.user.is_authenticated:
+        return request.user.is_authenticated
+
+    def get(self, request, *args, **kwargs):
+        logger.debug("Login process started")
+        next_path = self.get_next_path(request)
+
+        if self.should_prevent_auth(request):
+            # If the SAML_IGNORE_AUTHENTICATED_USERS_ON_LOGIN setting is True
+            # (default value), redirect to the next_path. Otherwise, show a
+            # configurable authorization error.
             if get_custom_setting("SAML_IGNORE_AUTHENTICATED_USERS_ON_LOGIN", True):
                 return HttpResponseRedirect(next_path)
             logger.debug("User is already logged in")
