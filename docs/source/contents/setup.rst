@@ -62,6 +62,10 @@ You can even configure the SAML cookie name as follows::
 
   SAML_SESSION_COOKIE_NAME = 'saml_session'
 
+By default, djangosaml2 will set "SameSite=None" for the SAML session cookie. This value can be configured as follows::
+
+  SAML_SESSION_COOKIE_SAMESITE = 'Lax'
+
 Remember that in your browser "SameSite=None" attribute MUST also
 have the "Secure" attribute, which is required in order to use "SameSite=None", otherwise the cookie will be blocked, so you must also set::
 
@@ -69,7 +73,7 @@ have the "Secure" attribute, which is required in order to use "SameSite=None", 
 
 .. Note::
 
-  djangosaml2 will attempt to set the ``SameSite`` attribute of the SAML session cookie to ``None`` so that it can be
+  djangosaml2 will by default attempt to set the ``SameSite`` attribute of the SAML session cookie to ``None`` so that it can be
   used in cross-site requests, but this is only possible with Django 3.1 or higher. If you are experiencing issues with
   unsolicited requests or cookies not being sent (particularly when using the HTTP-POST binding), consider upgrading
   to Django 3.1 or higher. If you can't do that, configure "allow_unsolicited" to True in pySAML2 configuration.
