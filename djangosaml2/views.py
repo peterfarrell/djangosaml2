@@ -15,6 +15,7 @@
 
 import base64
 import logging
+from typing import Optional
 from urllib.parse import quote
 
 from django.conf import settings
@@ -89,6 +90,18 @@ def _get_subject_id(session):
         return None
 
 
+def _get_next_path(request: HttpRequest) -> Optional[str]:
+    if "next" in request.GET:
+        next_path = request.GET["next"]
+    elif "RelayState" in request.GET:
+        next_path = request.GET["RelayState"]
+    else:
+        return None
+
+    next_path = validate_referral_url(request, next_path)
+    return next_path
+
+
 class SPConfigMixin:
     """Mixin for some of the SAML views with re-usable methods."""
 
@@ -138,20 +151,6 @@ class LoginView(SPConfigMixin, View):
         "djangosaml2/post_binding_form.html",
     )
 
-    def get_next_path(self, request: HttpRequest) -> str:
-        """Returns the path to put in the RelayState to redirect the user to after having logged in.
-        If the user is already logged in (and if allowed), he will redirect to there immediately.
-        """
-
-        next_path = get_fallback_login_redirect_url()
-        if "next" in request.GET:
-            next_path = request.GET["next"]
-        elif "RelayState" in request.GET:
-            next_path = request.GET["RelayState"]
-
-        next_path = validate_referral_url(request, next_path)
-        return next_path
-
     def unknown_idp(self, request, idp):
         msg = f"Error: IdP EntityID {escape(idp)} was not found in metadata"
         logger.error(msg)
@@ -185,7 +184,9 @@ class LoginView(SPConfigMixin, View):
 
     def get(self, request, *args, **kwargs):
         logger.debug("Login process started")
-        next_path = self.get_next_path(request)
+        next_path = _get_next_path(request)
+        if next_path is None:
+            next_path = get_fallback_login_redirect_url()
 
         if self.should_prevent_auth(request):
             # If the SAML_IGNORE_AUTHENTICATED_USERS_ON_LOGIN setting is True
@@ -822,8 +823,12 @@ def finish_logout(request, response):
 
         auth.logout(request)
 
-        if settings.LOGOUT_REDIRECT_URL is not None:
-            return HttpResponseRedirect(resolve_url(settings.LOGOUT_REDIRECT_URL))
+        next_path = _get_next_path(request)
+        if next_path is not None:
+            return HttpResponseRedirect(next_path)
+        elif settings.LOGOUT_REDIRECT_URL is not None:
+            fallback_url = resolve_url(settings.LOGOUT_REDIRECT_URL)
+            return HttpResponseRedirect(fallback_url)
         else:
             current_site = get_current_site(request)
             return render(
