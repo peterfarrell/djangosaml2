@@ -4,10 +4,10 @@ djangosaml2
 ![CI build](https://github.com/peppelinux/djangosaml2/workflows/djangosaml2/badge.svg)
 ![pypi](https://img.shields.io/pypi/v/djangosaml2.svg)
 [![Downloads](https://pepy.tech/badge/djangosaml2/month)](https://pepy.tech/project/djangosaml2)
-![Python version](https://img.shields.io/badge/license-Apache%202-blue.svg)
-![Django versions](https://img.shields.io/pypi/djversions/djangosaml2)
 ![Documentation Status](https://readthedocs.org/projects/djangosaml2/badge/?version=latest)
-![License](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11-blue.svg)
+![License](https://img.shields.io/badge/license-Apache%202-blue.svg)
+![Python versions](https://img.shields.io/pypi/pyversions/djangosaml2)
+![Django versions](https://img.shields.io/pypi/djversions/djangosaml2)
 
 
 A Django application that builds a Fully Compliant SAML2 Service Provider on top of PySAML2 library.
