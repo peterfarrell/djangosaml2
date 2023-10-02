@@ -575,7 +575,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
             return HttpResponseRedirect(custom_redirect_url)
 
         relay_state = validate_referral_url(request, relay_state)
-        if relay_state is None:
+        if not relay_state:
             logger.debug(
                 "RelayState is not a valid URL, redirecting to fallback: %s",
                 relay_state
