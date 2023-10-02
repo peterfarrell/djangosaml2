@@ -113,6 +113,7 @@ def validate_referral_url(request, url):
     )
     try:
         if saml_strict_url_validation:
+            # This will also resolve Django URL pattern names
             url = resolve_url(url)
     except NoReverseMatch:
         logger.debug("Could not validate given referral url is a valid URL")
