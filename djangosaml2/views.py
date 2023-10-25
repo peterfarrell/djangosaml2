@@ -99,6 +99,7 @@ def _get_next_path(request: HttpRequest) -> Optional[str]:
         return None
 
     next_path = validate_referral_url(request, next_path)
+
     return next_path
 
 
@@ -572,7 +573,15 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         custom_redirect_url = self.custom_redirect(user, relay_state, session_info)
         if custom_redirect_url:
             return HttpResponseRedirect(custom_redirect_url)
+
         relay_state = validate_referral_url(request, relay_state)
+        if not relay_state:
+            logger.debug(
+                "RelayState is not a valid URL, redirecting to fallback: %s",
+                relay_state
+            )
+            return HttpResponseRedirect(get_fallback_login_redirect_url())
+
         logger.debug("Redirecting to the RelayState: %s", relay_state)
         return HttpResponseRedirect(relay_state)
 
@@ -825,12 +834,17 @@ def finish_logout(request, response):
 
         next_path = _get_next_path(request)
         if next_path is not None:
+            logger.debug("Redirecting to the RelayState: %s", next_path)
             return HttpResponseRedirect(next_path)
         elif settings.LOGOUT_REDIRECT_URL is not None:
             fallback_url = resolve_url(settings.LOGOUT_REDIRECT_URL)
+            logger.debug("No valid RelayState found; Redirecting to "
+                         "LOGOUT_REDIRECT_URL")
             return HttpResponseRedirect(fallback_url)
         else:
             current_site = get_current_site(request)
+            logger.debug("No valid RelayState or LOGOUT_REDIRECT_URL found, "
+                         "rendering fallback template.")
             return render(
                 request,
                 "registration/logged_out.html",

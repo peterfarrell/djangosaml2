@@ -122,11 +122,11 @@ view to djangosaml2 wb path, like ``/saml2/login/``.
 Handling Post-Login Redirects
 =============================
 
-It is often desireable for the client to maintain the URL state (or at least manage it) so that
+It is often desirable for the client to maintain the URL state (or at least manage it) so that
 the URL once authentication has completed is consistent with the desired application state (such
 as retaining query parameters, etc.)  By default, the HttpRequest objects get_host() method is used
 to determine the hostname of the server, and redirect URL's are allowed so long as the destination
-host matches the output of get_host().  However, in some cases it becomes desireable for additional
+host matches the output of get_host().  However, in some cases it becomes desirable for additional
 hostnames to be used for the post-login redirect.  In such cases, the setting::
 
   SAML_ALLOWED_HOSTS = []
@@ -137,6 +137,22 @@ may be specified by the client - typically with the ?next= parameter.)
 In the absence of a ``?next=parameter``, the ``ACS_DEFAULT_REDIRECT_URL`` or ``LOGIN_REDIRECT_URL`` setting will
 be used (assuming the destination hostname either matches the output of get_host() or is included in the
 ``SAML_ALLOWED_HOSTS`` setting)
+
+Redirect URL validation
+=======================
+
+Djangosaml2 will validate the redirect URL before redirecting to its value. In
+some edge-cases, valid redirect targets will fail to pass this check. This is
+limited to URLs that are a single 'word' without slashes. (For example, 'home'
+but also 'page-with-dashes').
+
+In this situation, the best solution would be to add a slash to the URL. For
+example: 'home' could be '/home' or 'home/'.
+If this is unfeasible, this strict validation can be turned off by setting
+``SAML_STRICT_URL_VALIDATION`` to ``False`` in settings.py.
+
+During validation, `Django named URL patterns<https://docs.djangoproject.com/en/dev/topics/http/urls/#naming-url-patterns>`_
+will also be resolved. Turning off strict validation will prevent this from happening.
 
 Preferred sso binding
 =====================
