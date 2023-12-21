@@ -75,6 +75,21 @@ from .utils import (
     validate_referral_url,
 )
 
+# Update Content-Security-Policy headers for POST-Bindings
+try:
+    from csp.decorators import csp_update
+except ModuleNotFoundError:
+    # If csp is not installed, do not update fields as Content-Security-Policy
+    # is not used
+    def saml2_csp_update(view):
+        return view
+else:
+    # script-src 'unsafe-inline' to autosubmit forms,
+    # form-action https: to send data to IdPs
+    saml2_csp_update = csp_update(
+        SCRIPT_SRC=["'unsafe-inline'"], FORM_ACTION=["https:"]
+    )
+
 logger = logging.getLogger("djangosaml2")
 
 
@@ -109,6 +124,7 @@ class SPConfigMixin:
         return state, client
 
 
+@method_decorator(saml2_csp_update, name='dispatch')
 class LoginView(SPConfigMixin, View):
     """SAML Authorization Request initiator.
 
@@ -636,6 +652,7 @@ class EchoAttributesView(LoginRequiredMixin, SPConfigMixin, View):
         )
 
 
+@method_decorator(saml2_csp_update, name='dispatch')
 class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
     """SAML Logout Request initiator
 
@@ -714,7 +731,7 @@ class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
         return HttpResponseRedirect(getattr(settings, "LOGOUT_REDIRECT_URL", "/"))
 
 
-@method_decorator(csrf_exempt, name="dispatch")
+@method_decorator([saml2_csp_update, csrf_exempt], name="dispatch")
 class LogoutView(SPConfigMixin, View):
     """SAML Logout Response endpoint
 
