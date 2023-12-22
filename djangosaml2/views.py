@@ -15,6 +15,7 @@
 
 import base64
 import logging
+from typing import Optional
 from urllib.parse import quote
 
 from django.conf import settings
@@ -104,6 +105,19 @@ def _get_subject_id(session):
         return None
 
 
+def _get_next_path(request: HttpRequest) -> Optional[str]:
+    if "next" in request.GET:
+        next_path = request.GET["next"]
+    elif "RelayState" in request.GET:
+        next_path = request.GET["RelayState"]
+    else:
+        return None
+
+    next_path = validate_referral_url(request, next_path)
+
+    return next_path
+
+
 class SPConfigMixin:
     """Mixin for some of the SAML views with re-usable methods."""
 
@@ -154,20 +168,6 @@ class LoginView(SPConfigMixin, View):
         "djangosaml2/post_binding_form.html",
     )
 
-    def get_next_path(self, request: HttpRequest) -> str:
-        """Returns the path to put in the RelayState to redirect the user to after having logged in.
-        If the user is already logged in (and if allowed), he will redirect to there immediately.
-        """
-
-        next_path = get_fallback_login_redirect_url()
-        if "next" in request.GET:
-            next_path = request.GET["next"]
-        elif "RelayState" in request.GET:
-            next_path = request.GET["RelayState"]
-
-        next_path = validate_referral_url(request, next_path)
-        return next_path
-
     def unknown_idp(self, request, idp):
         msg = f"Error: IdP EntityID {escape(idp)} was not found in metadata"
         logger.error(msg)
@@ -190,21 +190,25 @@ class LoginView(SPConfigMixin, View):
     def add_idp_hinting(self, http_response):
         return add_idp_hinting(self.request, http_response) or http_response
 
-    def get(self, request, *args, **kwargs):
-        logger.debug("Login process started")
-        next_path = self.get_next_path(request)
-
-        # if the user is already authenticated that maybe because of two reasons:
+    def should_prevent_auth(self, request) -> bool:
+        # If the user is already authenticated that maybe because of two reasons:
         # A) He has this URL in two browser windows and in the other one he
         #    has already initiated the authenticated session.
         # B) He comes from a view that (incorrectly) send him here because
         #    he does not have enough permissions. That view should have shown
         #    an authorization error in the first place.
-        # We can only make one thing here and that is configurable with the
-        # SAML_IGNORE_AUTHENTICATED_USERS_ON_LOGIN setting. If that setting
-        # is True (default value) we will redirect him to the next_path path.
-        # Otherwise, we will show an (configurable) authorization error.
-        if request.user.is_authenticated:
+        return request.user.is_authenticated
+
+    def get(self, request, *args, **kwargs):
+        logger.debug("Login process started")
+        next_path = _get_next_path(request)
+        if next_path is None:
+            next_path = get_fallback_login_redirect_url()
+
+        if self.should_prevent_auth(request):
+            # If the SAML_IGNORE_AUTHENTICATED_USERS_ON_LOGIN setting is True
+            # (default value), redirect to the next_path. Otherwise, show a
+            # configurable authorization error.
             if get_custom_setting("SAML_IGNORE_AUTHENTICATED_USERS_ON_LOGIN", True):
                 return HttpResponseRedirect(next_path)
             logger.debug("User is already logged in")
@@ -566,7 +570,48 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         if callable(create_unknown_user):
             create_unknown_user = create_unknown_user()
 
+        try:
+            user = self.authenticate_user(
+                request,
+                session_info,
+                attribute_mapping,
+                create_unknown_user,
+                assertion_info
+            )
+        except PermissionDenied as e:
+            return self.handle_acs_failure(
+                request,
+                exception=e,
+                session_info=session_info,
+            )
+
+        relay_state = self.build_relay_state()
+        custom_redirect_url = self.custom_redirect(user, relay_state, session_info)
+        if custom_redirect_url:
+            return HttpResponseRedirect(custom_redirect_url)
+
+        relay_state = validate_referral_url(request, relay_state)
+        if not relay_state:
+            logger.debug(
+                "RelayState is not a valid URL, redirecting to fallback: %s",
+                relay_state
+            )
+            return HttpResponseRedirect(get_fallback_login_redirect_url())
+
+        logger.debug("Redirecting to the RelayState: %s", relay_state)
+        return HttpResponseRedirect(relay_state)
+
+    def authenticate_user(
+            self,
+            request,
+            session_info,
+            attribute_mapping,
+            create_unknown_user,
+            assertion_info
+        ):
+        """Calls Django's authenticate method after the SAML response is verified"""
         logger.debug("Trying to authenticate the user. Session info: %s", session_info)
+
         user = auth.authenticate(
             request=request,
             session_info=session_info,
@@ -579,11 +624,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
                 "Could not authenticate user received in SAML Assertion. Session info: %s",
                 session_info,
             )
-            return self.handle_acs_failure(
-                request,
-                exception=PermissionDenied("No user could be authenticated."),
-                session_info=session_info,
-            )
+            raise PermissionDenied("No user could be authenticated.")
 
         auth.login(self.request, user)
         _set_subject_id(request.saml_session, session_info["name_id"])
@@ -592,13 +633,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         self.post_login_hook(request, user, session_info)
         self.customize_session(user, session_info)
 
-        relay_state = self.build_relay_state()
-        custom_redirect_url = self.custom_redirect(user, relay_state, session_info)
-        if custom_redirect_url:
-            return HttpResponseRedirect(custom_redirect_url)
-        relay_state = validate_referral_url(request, relay_state)
-        logger.debug("Redirecting to the RelayState: %s", relay_state)
-        return HttpResponseRedirect(relay_state)
+        return user
 
     def post_login_hook(
         self, request: HttpRequest, user: settings.AUTH_USER_MODEL, session_info: dict
@@ -814,10 +849,19 @@ def finish_logout(request, response):
 
         auth.logout(request)
 
-        if settings.LOGOUT_REDIRECT_URL is not None:
-            return HttpResponseRedirect(resolve_url(settings.LOGOUT_REDIRECT_URL))
+        next_path = _get_next_path(request)
+        if next_path is not None:
+            logger.debug("Redirecting to the RelayState: %s", next_path)
+            return HttpResponseRedirect(next_path)
+        elif settings.LOGOUT_REDIRECT_URL is not None:
+            fallback_url = resolve_url(settings.LOGOUT_REDIRECT_URL)
+            logger.debug("No valid RelayState found; Redirecting to "
+                         "LOGOUT_REDIRECT_URL")
+            return HttpResponseRedirect(fallback_url)
         else:
             current_site = get_current_site(request)
+            logger.debug("No valid RelayState or LOGOUT_REDIRECT_URL found, "
+                         "rendering fallback template.")
             return render(
                 request,
                 "registration/logged_out.html",

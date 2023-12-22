@@ -13,7 +13,7 @@
     {# Not strictly valid HTML, but it's the only way to display/scale
         it properly, without weird scripting or heaps of work
     #}
-    <a href="{{ pathto(master_doc) }}" id="logo_main"><img src="{{ pathto('_static/' + logo, 1) }}" class="logo" alt="Logo" /></a>
+    <a href="{{ pathto(master_doc) }}" id="logo_main"><img src="{{ pathto('_static/logo.jpg', 1) }}" class="logo" alt="Logo" /></a>
 {% endif %}
 
 {% if logo and theme_logo_only %}
@@ -45,7 +45,7 @@
 {% block mobile_nav %}
     <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
     <a href="{{ pathto(master_doc) }}">
-        <img src="{{ pathto('_static/' + logo, 1) }}" class="logo" alt="Logo"/>
+        <img src="{{ pathto('_static/logo.jpg', 1) }}" class="logo" alt="Logo"/>
         </a>
     <a href="{{ pathto(master_doc) }}">
         {{ project }}
