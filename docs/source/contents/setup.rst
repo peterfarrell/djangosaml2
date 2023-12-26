@@ -243,7 +243,7 @@ setting::
   SAML_CONFIG_LOADER = 'python.path.to.your.callable'
 
 Bearer Assertion Replay Attack Prevention
-==================================
+=========================================
 In SAML standard doc, section 4.1.4.5 it states
 
 The service provider MUST ensure that bearer assertions are not replayed, by maintaining the set of used ID values for the length of time for which the assertion would be considered valid based on the NotOnOrAfter attribute in the <SubjectConfirmationData>
