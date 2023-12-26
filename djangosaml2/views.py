@@ -76,6 +76,8 @@ from .utils import (
     validate_referral_url,
 )
 
+logger = logging.getLogger("djangosaml2")
+
 # Update Content-Security-Policy headers for POST-Bindings
 try:
     from csp.decorators import csp_update
@@ -84,14 +86,17 @@ except ModuleNotFoundError:
     # is not used
     def saml2_csp_update(view):
         return view
+
+    logger.warning("django-csp could not be found, not updating Content-Security-Policy. Please "
+                   "make sure CSP is configured at least by httpd or setup django-csp. See "
+                   "https://djangosaml2.readthedocs.io/contents/security.html#content-security-policy"
+                   " for more information")
 else:
     # script-src 'unsafe-inline' to autosubmit forms,
     # form-action https: to send data to IdPs
     saml2_csp_update = csp_update(
         SCRIPT_SRC=["'unsafe-inline'"], FORM_ACTION=["https:"]
     )
-
-logger = logging.getLogger("djangosaml2")
 
 
 def _set_subject_id(session, subject_id):
