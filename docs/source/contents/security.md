@@ -4,7 +4,7 @@ Security considerations
 Authentication and Authorization are quite security relevant topics on its own.
 Make sure you understand SAML2 and its implications, specifically the
 separation of duties between Service Provider (SP) and Identity Provider (IdP):
-This Library aims to support a Service Provider in running Authentication
+this library aims to support a Service Provider in getting authenticated with
 against one or more IdP.
 
 Communication between SP and IdP is routed via the Browser, eliminating the
