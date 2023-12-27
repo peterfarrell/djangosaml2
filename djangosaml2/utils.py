@@ -22,6 +22,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import resolve_url
+from django.urls import NoReverseMatch
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from saml2.config import SPConfig
@@ -99,6 +100,25 @@ def get_fallback_login_redirect_url():
 
 
 def validate_referral_url(request, url):
+    # Ensure the url is even a valid URL; sometimes the given url is a
+    # RelayState containing PySAML data.
+    # Some technically-valid urls will be fail this check, so the
+    # SAML_STRICT_URL_VALIDATION setting can be used to turn off this check.
+    # This should only happen if there is no slash, host and/or protocol in the
+    # given URL. A better fix would be to add those to the RelayState.
+    saml_strict_url_validation = getattr(
+        settings,
+        "SAML_STRICT_URL_VALIDATION",
+        True
+    )
+    try:
+        if saml_strict_url_validation:
+            # This will also resolve Django URL pattern names
+            url = resolve_url(url)
+    except NoReverseMatch:
+        logger.debug("Could not validate given referral url is a valid URL")
+        return None
+
     # Ensure the user-originating redirection url is safe.
     # By setting SAML_ALLOWED_HOSTS in settings.py the user may provide a list of "allowed"
     # hostnames for post-login redirects, much like one would specify ALLOWED_HOSTS .
@@ -109,7 +129,10 @@ def validate_referral_url(request, url):
     )
 
     if not url_has_allowed_host_and_scheme(url=url, allowed_hosts=saml_allowed_hosts):
-        return get_fallback_login_redirect_url()
+        logger.debug("Referral URL not in SAML_ALLOWED_HOSTS or of the origin "
+                     "host.")
+        return None
+
     return url
 
 

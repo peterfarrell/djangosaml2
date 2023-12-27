@@ -1030,3 +1030,31 @@ class MiddlewareTests(SessionEnabledTestCase):
             self.assertIsNotNone(cookie["expires"])
             self.assertNotEqual(cookie["expires"], "")
             self.assertNotEqual(cookie["max-age"], "")
+
+    def test_middleware_cookie_samesite(self):
+        with override_settings(SAML_SESSION_COOKIE_SAMESITE="Lax"):
+            session = self.get_session()
+            session.save()
+            self.set_session_cookies(session)
+
+            config_loader_path = "djangosaml2.tests.test_config_loader_with_real_conf"
+            request = RequestFactory().get("/login/")
+            request.user = AnonymousUser()
+            request.session = session
+            middleware = SamlSessionMiddleware(dummy_get_response)
+            middleware.process_request(request)
+
+            saml_session_name = getattr(
+                settings, "SAML_SESSION_COOKIE_NAME", "saml_session"
+            )
+            getattr(request, saml_session_name).save()
+
+            response = views.LoginView.as_view(config_loader_path=config_loader_path)(
+                request
+            )
+
+            response = middleware.process_response(request, response)
+
+            cookie = response.cookies[saml_session_name]
+
+            self.assertEqual(cookie["samesite"], "Lax")
