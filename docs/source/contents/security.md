@@ -5,7 +5,7 @@ Authentication and Authorization are quite security relevant topics on its own.
 Make sure you understand SAML2 and its implications, specifically the
 separation of duties between Service Provider (SP) and Identity Provider (IdP):
 this library aims to support a Service Provider in getting authenticated with
-against one or more IdP.
+with one or more Identity Provider.
 
 Communication between SP and IdP is routed via the Browser, eliminating the
 need for direct communication between SP and IdP. However, for security the use
