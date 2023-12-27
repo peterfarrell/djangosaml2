@@ -222,13 +222,13 @@ see AARC Blueprint specs `here <https://zenodo.org/record/4596667/files/AARC-G06
 
 IdP scoping
 ===========
-The SP can suggest an IdP to a proxy by using the Scoping and IDPList elements in a SAML AuthnRequest. This is done using the `scoping` parameter to the login URL.
+The SP can suggest an IdP to a proxy by using the Scoping and IDPList elements in a SAML AuthnRequest. This is done using the `scoping` parameter to the login URL. ::
 
-``https://sp.example.org/saml2/login/?scoping=https://idp.example.org``
+  https://sp.example.org/saml2/login/?scoping=https://idp.example.org
 
-This parameter can be combined with the IdP parameter if multiple IdPs are present in the metadata, otherwise the first is used.
+This parameter can be combined with the IdP parameter if multiple IdPs are present in the metadata, otherwise the first is used. ::
 
-``https://sp.example.org/saml2/login/?scoping=https://idp.example.org&idp=https://proxy.example.com/metadata``
+  https://sp.example.org/saml2/login/?scoping=https://idp.example.org&idp=https://proxy.example.com/metadata
 
 Currently there is support for a single IDPEntry in the IDPList.
 
