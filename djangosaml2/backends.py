@@ -283,19 +283,17 @@ class Saml2Backend(ModelBackend):
         try:
             user = UserModel.objects.get(**user_query_args)
         except MultipleObjectsReturned:
-            logger.error(
-                "Multiple users match, model: %s, lookup: %s",
-                UserModel._meta,
-                user_query_args,
+            logger.exception(
+                f"Multiple users match, model: {UserModel._meta}, lookup: {user_query_args}",
             )
         except UserModel.DoesNotExist:
             # Create new one if desired by settings
             if create_unknown_user:
                 user = UserModel(**{user_lookup_key: user_lookup_value})
                 created = True
-                logger.debug(f"New user created: {user}")
+                logger.debug(f"New user created: {user}", exc_info=True)
             else:
-                logger.error(
+                logger.exception(
                     f"The user does not exist, model: {UserModel._meta}, lookup: {user_query_args}"
                 )
 
