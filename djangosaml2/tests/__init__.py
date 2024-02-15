@@ -462,6 +462,9 @@ class SAML2Tests(TestCase):
         user_id = self.client.session[SESSION_KEY]
         user = User.objects.get(id=user_id)
         self.assertEqual(user.username, "student")
+        # Since a new user object is created, the password
+        # field is set to have an unusable password.
+        self.assertEqual(user.has_usable_password(), False)
 
         # let's create another user and log in with that one
         new_user = User.objects.create(username="teacher", password="not-used")
@@ -486,6 +489,10 @@ class SAML2Tests(TestCase):
         # as the RelayState is empty we have redirect to ACS_DEFAULT_REDIRECT_URL
         self.assertRedirects(response, "/dashboard/")
         self.assertEqual(str(new_user.id), client.session[SESSION_KEY])
+        new_user.refresh_from_db()
+        # Since "new_user" already had a password,
+        # the password field will remain unchanged.
+        self.assertEqual(new_user.has_usable_password(), True)
 
     @override_settings(ACS_DEFAULT_REDIRECT_URL="testprofiles:dashboard")
     def test_assertion_consumer_service_default_relay_state(self):

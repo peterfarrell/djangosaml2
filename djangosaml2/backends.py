@@ -290,6 +290,7 @@ class Saml2Backend(ModelBackend):
             # Create new one if desired by settings
             if create_unknown_user:
                 user = UserModel(**{user_lookup_key: user_lookup_value})
+                user.set_unusable_password()
                 created = True
                 logger.debug(f"New user created: {user}", exc_info=True)
             else:
