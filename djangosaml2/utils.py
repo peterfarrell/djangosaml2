@@ -205,7 +205,7 @@ def add_idp_hinting(request, http_response) -> bool:
     return False
 
 
-@lru_cache()
+@lru_cache
 def get_csp_handler():
     """Returns a view decorator for CSP."""
 

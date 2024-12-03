@@ -15,7 +15,7 @@
 
 import logging
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from django.apps import apps
 from django.conf import settings
@@ -72,7 +72,7 @@ class Saml2Backend(ModelBackend):
 
     def _extract_user_identifier_params(
         self, session_info: dict, attributes: dict, attribute_mapping: dict
-    ) -> Tuple[str, Optional[Any]]:
+    ) -> tuple[str, Optional[Any]]:
         """Returns the attribute to perform a user lookup on, and the value to use for it.
         The value could be the name_id, or any other saml attribute from the request.
         """
@@ -262,7 +262,7 @@ class Saml2Backend(ModelBackend):
         attributes: dict,
         attribute_mapping: dict,
         request,
-    ) -> Tuple[Optional[settings.AUTH_USER_MODEL], bool]:
+    ) -> tuple[Optional[settings.AUTH_USER_MODEL], bool]:
         """Look up the user to authenticate. If he doesn't exist, this method creates him (if so desired).
         The default implementation looks only at the user_identifier. Override this method in order to do more complex behaviour,
         e.g. customize this per IdP.
