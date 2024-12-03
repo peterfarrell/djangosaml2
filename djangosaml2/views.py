@@ -135,7 +135,7 @@ class SPConfigMixin:
         return state, client
 
 
-@method_decorator(saml2_csp_update, name='dispatch')
+@method_decorator(saml2_csp_update, name="dispatch")
 class LoginView(SPConfigMixin, View):
     """SAML Authorization Request initiator.
 
@@ -389,7 +389,7 @@ class LoginView(SPConfigMixin, View):
                 except TemplateDoesNotExist as e:
                     logger.debug(
                         f"TemplateDoesNotExist: [{self.post_binding_form_template}] - {e}",
-                        exc_info=True
+                        exc_info=True,
                     )
 
             if not http_response:
@@ -574,7 +574,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
                 session_info,
                 attribute_mapping,
                 create_unknown_user,
-                assertion_info
+                assertion_info,
             )
         except PermissionDenied as e:
             return self.handle_acs_failure(
@@ -592,7 +592,7 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         if not relay_state:
             logger.debug(
                 "RelayState is not a valid URL, redirecting to fallback: %s",
-                relay_state
+                relay_state,
             )
             return HttpResponseRedirect(get_fallback_login_redirect_url())
 
@@ -600,13 +600,13 @@ class AssertionConsumerServiceView(SPConfigMixin, View):
         return HttpResponseRedirect(relay_state)
 
     def authenticate_user(
-            self,
-            request,
-            session_info,
-            attribute_mapping,
-            create_unknown_user,
-            assertion_info
-        ):
+        self,
+        request,
+        session_info,
+        attribute_mapping,
+        create_unknown_user,
+        assertion_info,
+    ):
         """Calls Django's authenticate method after the SAML response is verified"""
         logger.debug("Trying to authenticate the user. Session info: %s", session_info)
 
@@ -685,7 +685,7 @@ class EchoAttributesView(LoginRequiredMixin, SPConfigMixin, View):
         )
 
 
-@method_decorator(saml2_csp_update, name='dispatch')
+@method_decorator(saml2_csp_update, name="dispatch")
 class LogoutInitView(LoginRequiredMixin, SPConfigMixin, View):
     """SAML Logout Request initiator
 
@@ -801,7 +801,9 @@ class LogoutView(SPConfigMixin, View):
                 )
             except StatusError as e:
                 response = None
-                logger.warning(f"Error logging out from remote provider: {e}", exc_info=True)
+                logger.warning(
+                    f"Error logging out from remote provider: {e}", exc_info=True
+                )
             state.sync()
             return finish_logout(request, response)
 
@@ -853,13 +855,16 @@ def finish_logout(request, response):
             return HttpResponseRedirect(next_path)
         elif settings.LOGOUT_REDIRECT_URL is not None:
             fallback_url = resolve_url(settings.LOGOUT_REDIRECT_URL)
-            logger.debug("No valid RelayState found; Redirecting to "
-                         "LOGOUT_REDIRECT_URL")
+            logger.debug(
+                "No valid RelayState found; Redirecting to " "LOGOUT_REDIRECT_URL"
+            )
             return HttpResponseRedirect(fallback_url)
         else:
             current_site = get_current_site(request)
-            logger.debug("No valid RelayState or LOGOUT_REDIRECT_URL found, "
-                         "rendering fallback template.")
+            logger.debug(
+                "No valid RelayState or LOGOUT_REDIRECT_URL found, "
+                "rendering fallback template."
+            )
             return render(
                 request,
                 "registration/logged_out.html",

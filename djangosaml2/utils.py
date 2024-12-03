@@ -47,7 +47,7 @@ def available_idps(config: SPConfig, langpref=None, idp_to_check: str = None) ->
     for metadata in config.metadata.metadata.values():
         # initiate a fetch to the selected idp when using MDQ, otherwise the MetaDataMDX is an empty database
         if isinstance(metadata, MetaDataMDX) and idp_to_check:
-            m = metadata[idp_to_check]
+            m = metadata[idp_to_check]  # noqa: F841
         result = metadata.any("idpsso_descriptor", "single_sign_on_service")
         if result:
             idps.update(result.keys())
@@ -108,11 +108,7 @@ def validate_referral_url(request, url):
     # SAML_STRICT_URL_VALIDATION setting can be used to turn off this check.
     # This should only happen if there is no slash, host and/or protocol in the
     # given URL. A better fix would be to add those to the RelayState.
-    saml_strict_url_validation = getattr(
-        settings,
-        "SAML_STRICT_URL_VALIDATION",
-        True
-    )
+    saml_strict_url_validation = getattr(settings, "SAML_STRICT_URL_VALIDATION", True)
     try:
         if saml_strict_url_validation:
             # This will also resolve Django URL pattern names
@@ -133,8 +129,7 @@ def validate_referral_url(request, url):
     )
 
     if not url_has_allowed_host_and_scheme(url=url, allowed_hosts=saml_allowed_hosts):
-        logger.debug("Referral URL not in SAML_ALLOWED_HOSTS or of the origin "
-                     "host.")
+        logger.debug("Referral URL not in SAML_ALLOWED_HOSTS or of the origin host.")
         return None
 
     return url
