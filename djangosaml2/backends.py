@@ -322,6 +322,7 @@ class Saml2Backend(ModelBackend):
         warnings.warn(
             "get_attribute_value() is deprecated, look at the Saml2Backend on how to subclass it",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._get_attribute_value(django_field, attributes, attribute_mapping)
 
@@ -329,6 +330,7 @@ class Saml2Backend(ModelBackend):
         warnings.warn(
             "get_django_user_main_attribute() is deprecated, look at the Saml2Backend on how to subclass it",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._user_lookup_attribute
 
@@ -336,6 +338,7 @@ class Saml2Backend(ModelBackend):
         warnings.warn(
             "get_django_user_main_attribute_lookup() is deprecated, look at the Saml2Backend on how to subclass it",
             DeprecationWarning,
+            stacklevel=2,
         )
         return getattr(settings, "SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP", "")
 
@@ -343,6 +346,7 @@ class Saml2Backend(ModelBackend):
         warnings.warn(
             "get_user_query_args() is deprecated, look at the Saml2Backend on how to subclass it",
             DeprecationWarning,
+            stacklevel=2,
         )
         return {
             self.get_django_user_main_attribute()
@@ -353,6 +357,7 @@ class Saml2Backend(ModelBackend):
         warnings.warn(
             "configure_user() is deprecated, look at the Saml2Backend on how to subclass it",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._update_user(user, attributes, attribute_mapping)
 
@@ -360,6 +365,7 @@ class Saml2Backend(ModelBackend):
         warnings.warn(
             "update_user() is deprecated, look at the Saml2Backend on how to subclass it",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._update_user(user, attributes, attribute_mapping)
 
@@ -367,6 +373,7 @@ class Saml2Backend(ModelBackend):
         warnings.warn(
             "_set_attribute() is deprecated, look at the Saml2Backend on how to subclass it",
             DeprecationWarning,
+            stacklevel=2,
         )
         return set_attribute(obj, attr, value)
 
@@ -375,5 +382,6 @@ def get_saml_user_model():
     warnings.warn(
         "_set_attribute() is deprecated, look at the Saml2Backend on how to subclass it",
         DeprecationWarning,
+        stacklevel=2,
     )
     return Saml2Backend()._user_model
