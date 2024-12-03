@@ -40,7 +40,7 @@ repos:
     rev: 1.22.2
     hooks:
       - id: django-upgrade
-        args: [--target-version, "3.2"]
+        args: [--target-version, "4.2"]
 
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.1
