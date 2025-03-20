@@ -63,4 +63,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=["defusedxml>=0.4.1", "Django>=4.2", "pysaml2>=6.5.1"],
+    python_requires=">=3.9",
 )
