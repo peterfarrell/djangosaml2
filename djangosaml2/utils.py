@@ -18,6 +18,7 @@ import urllib
 import zlib
 from functools import lru_cache, wraps
 from typing import Optional
+import importlib.metadata
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -254,4 +255,14 @@ def _django_csp_update_decorator():
     else:
         # autosubmit of forms uses nonce per default
         # form-action https: to send data to IdPs
-        return csp_update(FORM_ACTION=["https:"])
+        try:
+            csp_version = importlib.metadata.version("django-csp")
+        except importlib.metadata.PackageNotFoundError:
+            csp_version = "0"
+
+        major_version = int(csp_version.split(".")[0])
+
+        if major_version >= 4:
+            return csp_update({"form-action": ["https:"]})
+        else:
+            return csp_update(FORM_ACTION=["https:"])
