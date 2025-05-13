@@ -239,6 +239,7 @@ def _django_csp_update_decorator():
     """Returns a view CSP decorator if django-csp is available, otherwise None."""
     try:
         from csp.decorators import csp_update
+        import csp
     except ModuleNotFoundError:
         # If csp is not installed, do not update fields as Content-Security-Policy
         # is not used
@@ -254,4 +255,29 @@ def _django_csp_update_decorator():
     else:
         # autosubmit of forms uses nonce per default
         # form-action https: to send data to IdPs
-        return csp_update(FORM_ACTION=["https:"])
+        
+        # Check django-csp version to determine the appropriate format
+        try:
+            version = getattr(csp, "__version__", "0.0")
+            major_version = int(version.split(".")[0])
+            
+            # Version detection successful
+            if major_version >= 4:
+                # django-csp 4.0+ uses dict format with named 'config' parameter
+                return csp_update(config={"form-action": ["https:"]})
+            else:
+                # django-csp < 4.0 uses kwargs format
+                return csp_update(FORM_ACTION=["https:"])
+        except (AttributeError, ValueError, IndexError):
+            # Version detection failed, we need to try both formats
+            
+            # Try v4.0+ style first because:
+            # 1. It has better error handling with clear messages
+            # 2. Newer versions are more likely to be supported in the future
+            # 3. If using kwargs with v4.0, it raises a specific RuntimeError we can catch
+            try:
+                return csp_update(config={"form-action": ["https:"]})
+            except (TypeError, RuntimeError):
+                # TypeErrors could happen if config is not a recognized parameter (v3.x)
+                # RuntimeErrors could happen in v4.0+ if we try the wrong approach
+                return csp_update(FORM_ACTION=["https:"])
