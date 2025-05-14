@@ -18,6 +18,7 @@ import urllib
 import zlib
 from functools import lru_cache, wraps
 from typing import Optional
+from importlib.metadata import version, PackageNotFoundError
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -255,22 +256,19 @@ def _django_csp_update_decorator():
     else:
         # autosubmit of forms uses nonce per default
         # form-action https: to send data to IdPs
-        
         # Check django-csp version to determine the appropriate format
         try:
-            version = getattr(csp, "__version__", "0.0")
-            major_version = int(version.split(".")[0])
-            
+            csp_version = version('django-csp')
+            major_version = int(csp_version.split('.')[0])
+
             # Version detection successful
             if major_version >= 4:
                 # django-csp 4.0+ uses dict format with named 'config' parameter
                 return csp_update(config={"form-action": ["https:"]})
-            else:
-                # django-csp < 4.0 uses kwargs format
-                return csp_update(FORM_ACTION=["https:"])
-        except (AttributeError, ValueError, IndexError):
+            # django-csp < 4.0 uses kwargs format
+            return csp_update(FORM_ACTION=["https:"])
+        except (PackageNotFoundError, ValueError, RuntimeError, AttributeError, IndexError):
             # Version detection failed, we need to try both formats
-            
             # Try v4.0+ style first because:
             # 1. It has better error handling with clear messages
             # 2. Newer versions are more likely to be supported in the future
